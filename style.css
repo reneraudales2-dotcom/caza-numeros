@@ -1,0 +1,723 @@
+/* style.css - Estilos arcade modernos y responsivos para Caza Números Online */
+
+:root {
+  --bg-dark: #0b0f19;
+  --bg-card: rgba(26, 32, 53, 0.85);
+  --bg-card-border: rgba(255, 255, 255, 0.08);
+  --primary: #06b6d4;      /* Cian Eléctrico */
+  --primary-glow: rgba(6, 182, 212, 0.4);
+  --secondary: #f59e0b;    /* Ámbar Neón */
+  --secondary-glow: rgba(245, 158, 11, 0.4);
+  --accent-pink: #ec4899;
+  --accent-green: #10b981;
+  --text-main: #f8fafc;
+  --text-muted: #94a3b8;
+  --danger: #ef4444;
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+  -webkit-tap-highlight-color: transparent;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  background: radial-gradient(circle at 50% 20%, #1e1b4b 0%, #0b0f19 75%);
+  color: var(--text-main);
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  overflow-x: hidden;
+  touch-action: manipulation;
+}
+
+/* Header & Barra Superior */
+.app-header {
+  width: 100%;
+  max-width: 650px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 14px 18px;
+  background: rgba(11, 15, 25, 0.7);
+  backdrop-filter: blur(10px);
+  border-bottom: 1px solid var(--bg-card-border);
+  position: sticky;
+  top: 0;
+  z-index: 50;
+}
+
+.logo {
+  font-size: 1.25rem;
+  font-weight: 800;
+  letter-spacing: 0.5px;
+  background: linear-gradient(135deg, var(--primary), var(--secondary));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.header-btn {
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid var(--bg-card-border);
+  color: var(--text-main);
+  padding: 6px 14px;
+  border-radius: 20px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.header-btn:hover {
+  background: rgba(255, 255, 255, 0.15);
+}
+
+/* Contenedor Principal */
+.app-main {
+  width: 100%;
+  max-width: 650px;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  padding: 16px;
+  position: relative;
+}
+
+/* Vistas */
+.view {
+  display: none;
+  flex-direction: column;
+  width: 100%;
+  animation: fadeIn 0.25s ease-out forwards;
+}
+
+.view.active {
+  display: flex;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* Tarjetas */
+.card {
+  background: var(--bg-card);
+  backdrop-filter: blur(16px);
+  border: 1px solid var(--bg-card-border);
+  border-radius: 20px;
+  padding: 22px;
+  margin-bottom: 16px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.35);
+}
+
+/* Textos e Inputs */
+h1 {
+  font-size: 1.8rem;
+  font-weight: 900;
+  text-align: center;
+  margin-bottom: 8px;
+}
+
+.subtitle {
+  text-align: center;
+  color: var(--text-muted);
+  font-size: 0.95rem;
+  margin-bottom: 22px;
+  line-height: 1.4;
+}
+
+.form-group {
+  margin-bottom: 16px;
+}
+
+.form-group label {
+  display: block;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  margin-bottom: 6px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+input[type="text"], select {
+  width: 100%;
+  padding: 14px 16px;
+  background: rgba(15, 23, 42, 0.7);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 12px;
+  color: var(--text-main);
+  font-size: 1.05rem;
+  font-weight: 600;
+  outline: none;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+input[type="text"]:focus, select:focus {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px var(--primary-glow);
+}
+
+/* Botones Principales */
+.btn {
+  width: 100%;
+  padding: 15px;
+  border-radius: 14px;
+  font-size: 1.05rem;
+  font-weight: 700;
+  cursor: pointer;
+  border: none;
+  transition: transform 0.1s, box-shadow 0.2s, opacity 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.btn:active {
+  transform: scale(0.98);
+}
+
+.btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.btn-primary {
+  background: linear-gradient(135deg, #06b6d4, #0284c7);
+  color: #ffffff;
+  box-shadow: 0 6px 20px var(--primary-glow);
+}
+
+.btn-secondary {
+  background: linear-gradient(135deg, #f59e0b, #d97706);
+  color: #ffffff;
+  box-shadow: 0 6px 20px var(--secondary-glow);
+}
+
+.btn-accent {
+  background: linear-gradient(135deg, #10b981, #059669);
+  color: #ffffff;
+}
+
+.btn-outline {
+  background: transparent;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  color: var(--text-main);
+}
+
+.btn-outline:hover {
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.status-msg {
+  text-align: center;
+  font-size: 0.9rem;
+  margin-top: 10px;
+  min-height: 20px;
+  font-weight: 500;
+}
+
+/* Vista Sala de Espera */
+.room-code-badge {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  background: rgba(6, 182, 212, 0.1);
+  border: 1px dashed var(--primary);
+  border-radius: 16px;
+  padding: 14px;
+  margin-bottom: 20px;
+}
+
+.code-title {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.code-val {
+  font-size: 2.4rem;
+  font-weight: 900;
+  letter-spacing: 4px;
+  color: var(--primary);
+  text-shadow: 0 0 15px var(--primary-glow);
+}
+
+.qr-box {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 16px;
+}
+
+.players-lobby-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-bottom: 20px;
+}
+
+.player-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: rgba(15, 23, 42, 0.6);
+  padding: 12px 16px;
+  border-radius: 12px;
+  border-left: 4px solid var(--primary);
+}
+
+.player-item.p2 {
+  border-left-color: var(--secondary);
+}
+
+.ready-glow {
+  animation: pulseGlow 1.5s infinite alternate;
+}
+
+@keyframes pulseGlow {
+  from { box-shadow: 0 0 10px var(--primary-glow); }
+  to { box-shadow: 0 0 25px var(--primary-glow), 0 0 10px #ffffff; }
+}
+
+/* HUD del Juego */
+.game-hud {
+  background: var(--bg-card);
+  border: 1px solid var(--bg-card-border);
+  border-radius: 16px;
+  padding: 12px 16px;
+  margin-bottom: 16px;
+}
+
+.hud-players {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.hud-player-box {
+  display: flex;
+  flex-direction: column;
+}
+
+.hud-player-box.right {
+  align-items: flex-end;
+}
+
+.hud-name {
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--text-muted);
+}
+
+.hud-score {
+  font-size: 1.5rem;
+  font-weight: 900;
+}
+
+.hud-score.my {
+  color: var(--primary);
+}
+
+.hud-score.rival {
+  color: var(--secondary);
+}
+
+.hud-bars {
+  display: flex;
+  height: 8px;
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: 6px;
+  overflow: hidden;
+  gap: 2px;
+}
+
+.hud-bar {
+  height: 100%;
+  transition: width 0.15s ease;
+}
+
+.hud-bar.my {
+  background: linear-gradient(90deg, #0284c7, var(--primary));
+}
+
+.hud-bar.rival {
+  background: linear-gradient(90deg, #d97706, var(--secondary));
+}
+
+/* Paneles de Roles */
+.role-banner {
+  text-align: center;
+  padding: 14px;
+  border-radius: 16px;
+  margin-bottom: 16px;
+}
+
+.role-banner.attacker {
+  background: rgba(6, 182, 212, 0.12);
+  border: 1px solid var(--primary);
+}
+
+.role-banner.searcher {
+  background: rgba(236, 72, 153, 0.12);
+  border: 1px solid var(--accent-pink);
+  animation: searchAlert 1s infinite alternate;
+}
+
+@keyframes searchAlert {
+  from { border-color: var(--accent-pink); box-shadow: 0 0 10px rgba(236, 72, 153, 0.2); }
+  to { border-color: #f43f5e; box-shadow: 0 0 20px rgba(244, 63, 94, 0.4); }
+}
+
+.target-badge {
+  display: inline-block;
+  font-size: 2.4rem;
+  font-weight: 900;
+  padding: 4px 20px;
+  border-radius: 12px;
+  background: #ffffff;
+  color: #0b0f19;
+  margin: 8px 0;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.3);
+}
+
+/* Botón Gigante de Tachado (Atacante) */
+.tachar-zone {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin: 20px 0;
+}
+
+.btn-tachar-huge {
+  width: 100%;
+  max-width: 320px;
+  height: 160px;
+  border-radius: 28px;
+  background: linear-gradient(135deg, #06b6d4, #2563eb);
+  color: #ffffff;
+  border: 4px solid rgba(255, 255, 255, 0.3);
+  box-shadow: 0 12px 35px var(--primary-glow), inset 0 -6px 0 rgba(0,0,0,0.25);
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.05s ease, box-shadow 0.05s ease;
+  outline: none;
+}
+
+.btn-tachar-huge:active, .btn-tachar-huge.tap-pop {
+  transform: translateY(6px) scale(0.97);
+  box-shadow: 0 4px 15px var(--primary-glow), inset 0 -2px 0 rgba(0,0,0,0.25);
+}
+
+.tachar-label {
+  font-size: 1.1rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.tachar-next-num {
+  font-size: 3.8rem;
+  font-weight: 900;
+  line-height: 1;
+  text-shadow: 0 3px 8px rgba(0,0,0,0.3);
+}
+
+.tachar-hint {
+  font-size: 0.8rem;
+  opacity: 0.85;
+  margin-top: 4px;
+}
+
+.turn-stat-chip {
+  margin-top: 14px;
+  background: rgba(255, 255, 255, 0.08);
+  padding: 6px 16px;
+  border-radius: 20px;
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
+/* Cuadrícula de Números del Buscador */
+.board-grid-wrapper {
+  background: rgba(15, 23, 42, 0.6);
+  border: 1px solid var(--bg-card-border);
+  border-radius: 18px;
+  padding: 12px;
+  max-height: 60vh;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.board-grid {
+  display: grid;
+  gap: 8px;
+  justify-content: center;
+}
+
+.board-cell {
+  aspect-ratio: 1 / 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(30, 41, 59, 0.85);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 10px;
+  color: var(--text-main);
+  font-size: 1.15rem;
+  font-weight: 800;
+  cursor: pointer;
+  transition: transform 0.08s, background 0.15s, border-color 0.15s;
+  touch-action: manipulation;
+}
+
+.board-cell:hover {
+  background: rgba(51, 65, 85, 0.95);
+  border-color: rgba(255, 255, 255, 0.3);
+}
+
+.board-cell:active {
+  transform: scale(0.92);
+}
+
+.board-cell.correct-found {
+  background: linear-gradient(135deg, #10b981, #059669) !important;
+  color: #ffffff !important;
+  border-color: #34d399 !important;
+  transform: scale(1.1);
+  box-shadow: 0 0 15px rgba(16, 185, 129, 0.6);
+}
+
+.board-cell.already-found {
+  opacity: 0.35;
+  background: rgba(15, 23, 42, 0.4);
+  text-decoration: line-through;
+}
+
+.board-cell.wrong-cell {
+  background: #ef4444 !important;
+  border-color: #f87171 !important;
+  animation: shake 0.3s;
+}
+
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  25% { transform: translateX(-5px); }
+  75% { transform: translateX(5px); }
+}
+
+/* Overlay de Transición de Turno */
+.turn-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(11, 15, 25, 0.85);
+  backdrop-filter: blur(8px);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  z-index: 100;
+  animation: fadeIn 0.2s ease-out;
+}
+
+.overlay-box {
+  background: var(--bg-card);
+  border: 2px solid var(--primary);
+  border-radius: 24px;
+  padding: 30px;
+  text-align: center;
+  max-width: 90%;
+  width: 400px;
+  box-shadow: 0 15px 40px rgba(0,0,0,0.6);
+}
+
+.countdown-badge {
+  font-size: 4rem;
+  font-weight: 900;
+  color: var(--secondary);
+  margin-top: 12px;
+  animation: pulse 1s infinite;
+}
+
+@keyframes pulse {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.15); }
+  100% { transform: scale(1); }
+}
+
+/* Game Over View */
+.winner-box {
+  text-align: center;
+  margin-bottom: 24px;
+}
+
+.winner-box h2 {
+  font-size: 2rem;
+  font-weight: 900;
+  line-height: 1.3;
+  margin-bottom: 8px;
+}
+
+.final-stats-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 12px;
+  margin-bottom: 24px;
+}
+
+.stat-card {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: rgba(15, 23, 42, 0.6);
+  padding: 14px 18px;
+  border-radius: 12px;
+  font-weight: 600;
+}
+
+.stat-val {
+  font-size: 1.25rem;
+  font-weight: 800;
+}
+
+/* Confetti Canvas */
+#confetti-canvas {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 999;
+}
+
+.hidden {
+  display: none !important;
+}
+
+/* Responsive Móviles */
+@media (max-width: 480px) {
+  h1 { font-size: 1.5rem; }
+  .card { padding: 18px; }
+  .btn-tachar-huge { height: 140px; }
+  .tachar-next-num { font-size: 3.2rem; }
+  .target-badge { font-size: 2rem; padding: 3px 16px; }
+  .board-cell { font-size: 1rem; }
+}
+
+/* ===================================================
+   Estilos para Juegos de Palabras (No Elijas / Telepatía)
+   =================================================== */
+
+.word-options-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.word-option-card {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  padding: 14px 18px;
+  background: rgba(30, 41, 59, 0.85);
+  border: 2px solid rgba(255, 255, 255, 0.12);
+  border-radius: 14px;
+  color: var(--text-main);
+  cursor: pointer;
+  transition: all 0.15s ease;
+  position: relative;
+  text-align: left;
+  outline: none;
+}
+
+.word-option-card:hover:not(.disabled):not(.selected) {
+  background: rgba(51, 65, 85, 0.95);
+  border-color: var(--primary);
+  transform: translateY(-2px);
+}
+
+.word-option-card:active:not(.disabled) {
+  transform: scale(0.98);
+}
+
+.word-option-card.selected {
+  background: rgba(6, 182, 212, 0.25) !important;
+  border-color: var(--primary) !important;
+  box-shadow: 0 0 20px var(--primary-glow);
+  transform: scale(1.02);
+}
+
+.word-option-card.disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
+.word-card-num {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.12);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.85rem;
+  font-weight: 800;
+  margin-right: 14px;
+  flex-shrink: 0;
+}
+
+.word-card-text {
+  font-size: 1.1rem;
+  font-weight: 700;
+  flex: 1;
+}
+
+.word-card-lock {
+  font-size: 1.2rem;
+  animation: pulse 1s infinite;
+}
+
+/* Tarjetas de Revelación */
+.reveal-card {
+  background: rgba(15, 23, 42, 0.85);
+  border: 2px solid var(--primary);
+  border-radius: 16px;
+  padding: 16px 10px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.4);
+}
+
+.reveal-card.rival {
+  border-color: var(--secondary);
+}
+
+.reveal-badge {
+  font-size: 0.7rem;
+  font-weight: 800;
+  letter-spacing: 0.5px;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  margin-bottom: 6px;
+}
+
+.reveal-word {
+  font-size: 1.15rem;
+  font-weight: 900;
+  color: var(--text-main);
+  text-align: center;
+  word-break: break-word;
+}
+
