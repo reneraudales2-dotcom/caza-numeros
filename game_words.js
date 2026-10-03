@@ -20,6 +20,7 @@ class WordGamesController {
     this.scoreFails = 0;  // Choques (en DIFF) o Desconexiones (en SAME)
     this.timerLeft = 10;
     this.timerInterval = null;
+    this.revealInterval = null;
     this.isRevealing = false;
     this.active = false;
 
@@ -71,7 +72,10 @@ class WordGamesController {
       this.dom.btnRematch.onclick = () => this.requestRematch();
     }
     if (this.dom.btnMenu) {
-      this.dom.btnMenu.onclick = () => location.reload();
+      this.dom.btnMenu.onclick = () => {
+        if (window.netManager) window.netManager.disconnect();
+        location.reload();
+      };
     }
   }
 
@@ -84,7 +88,31 @@ class WordGamesController {
     this.usedCategoryIndices.clear();
     this.scoreHits = 0;
     this.scoreFails = 0;
+    this.myChoice = null;
+    this.rivalChoice = null;
+    this.isRevealing = false;
     this.active = true;
+
+    if (this.timerInterval) {
+      clearInterval(this.timerInterval);
+      this.timerInterval = null;
+    }
+    if (this.revealInterval) {
+      clearInterval(this.revealInterval);
+      this.revealInterval = null;
+    }
+    if (this.dom.revealModal) {
+      this.dom.revealModal.classList.add('hidden');
+    }
+    if (this.dom.btnRematch) {
+      this.dom.btnRematch.disabled = false;
+    }
+    if (this.dom.rematchStatus) {
+      this.dom.rematchStatus.textContent = '';
+    }
+    if (window.wordRematchVotes) {
+      window.wordRematchVotes.clear();
+    }
 
     // Configurar encabezados visuales según el modo
     if (this.mode === 'MIND_DIFF') {
@@ -318,12 +346,17 @@ class WordGamesController {
     // Cuenta atrás de 3 segundos para siguiente ronda
     let countdown = 3;
     this.dom.revealNextCountdown.textContent = countdown;
-    const countInterval = setInterval(() => {
+    if (this.revealInterval) {
+      clearInterval(this.revealInterval);
+      this.revealInterval = null;
+    }
+    this.revealInterval = setInterval(() => {
       countdown--;
       if (countdown > 0) {
         this.dom.revealNextCountdown.textContent = countdown;
       } else {
-        clearInterval(countInterval);
+        clearInterval(this.revealInterval);
+        this.revealInterval = null;
         if (window.netManager.isHost) {
           this.hostStartNextRound();
         }
@@ -337,17 +370,52 @@ class WordGamesController {
   }
 
   triggerGameOver() {
-    this.active = false;
-    this.dom.revealModal.classList.add('hidden');
-
-    document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
-    this.dom.viewGameOver.classList.add('active');
+    this.handleGameOver(this.scoreHits, this.scoreFails);
 
     window.netManager.send({
       type: 'WORD_GAME_OVER',
       scoreHits: this.scoreHits,
       scoreFails: this.scoreFails
     });
+  }
+
+  handleGameOver(scoreHits, scoreFails) {
+    this.initDOM();
+    this.active = false;
+    this.isRevealing = false;
+    this.myChoice = null;
+    this.rivalChoice = null;
+
+    if (this.timerInterval) {
+      clearInterval(this.timerInterval);
+      this.timerInterval = null;
+    }
+    if (this.revealInterval) {
+      clearInterval(this.revealInterval);
+      this.revealInterval = null;
+    }
+
+    if (this.dom.revealModal) {
+      this.dom.revealModal.classList.add('hidden');
+    }
+
+    if (typeof scoreHits === 'number') this.scoreHits = scoreHits;
+    if (typeof scoreFails === 'number') this.scoreFails = scoreFails;
+
+    document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+    if (this.dom.viewGameOver) {
+      this.dom.viewGameOver.classList.add('active');
+    }
+
+    if (this.dom.btnRematch) {
+      this.dom.btnRematch.disabled = false;
+    }
+    if (this.dom.rematchStatus) {
+      this.dom.rematchStatus.textContent = '';
+    }
+    if (window.wordRematchVotes) {
+      window.wordRematchVotes.clear();
+    }
 
     this.renderGameOverStats();
   }
@@ -410,7 +478,7 @@ window.wordRematchVotes = new Set();
 window.addEventListener('DOMContentLoaded', () => {
   if (window.netManager) {
     window.netManager.on('word_round_start', (data) => {
-      if (!window.wordGames.active) {
+      if (data.round === 1 || !window.wordGames.active) {
         window.wordGames.startGame(data.mode, data.totalRounds);
       }
       window.wordGames.setupRound(data.categoryIndex, data.round);
@@ -421,7 +489,7 @@ window.addEventListener('DOMContentLoaded', () => {
     });
 
     window.netManager.on('word_game_over', (data) => {
-      window.wordGames.renderGameOverStats();
+      window.wordGames.handleGameOver(data.scoreHits, data.scoreFails);
     });
 
     window.netManager.on('word_rematch_req', () => {
