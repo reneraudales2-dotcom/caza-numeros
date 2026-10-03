@@ -107,6 +107,128 @@
     });
   }
 
+  // Control dinámico de configuración visible según el juego seleccionado
+  function updateGameConfigVisibility() {
+    if (!ui.selectGameType) return;
+    const val = ui.selectGameType.value;
+    const isSpeed = (val === 'SPEED_NUMBERS');
+    if (ui.cfgSpeedNumbers) ui.cfgSpeedNumbers.classList.toggle('hidden', !isSpeed);
+    if (ui.cfgWordGames) ui.cfgWordGames.classList.toggle('hidden', isSpeed);
+    if (ui.cfgCategorySelect) ui.cfgCategorySelect.classList.toggle('hidden', isSpeed);
+  }
+
+  // Poblar categorías dinámicamente desde window.GAME_CATEGORIES
+  function populateCategorySelect() {
+    if (!ui.selectCategory || !window.GAME_CATEGORIES) return;
+    const currentVal = ui.selectCategory.value;
+    ui.selectCategory.innerHTML = '<option value="-1">🎲 Random (Aleatoria)</option>';
+    window.GAME_CATEGORIES.forEach((cat, idx) => {
+      const opt = document.createElement('option');
+      opt.value = idx;
+      opt.textContent = `${cat.icon} ${cat.name}`;
+      ui.selectCategory.appendChild(opt);
+    });
+    if (currentVal && ui.selectCategory.querySelector(`option[value="${currentVal}"]`)) {
+      ui.selectCategory.value = currentVal;
+    } else {
+      ui.selectCategory.value = "-1";
+    }
+  }
+
+  // Volver a la sala compartida sin desconectar
+  function returnToLobby(isInitiator = true) {
+    state.gameOver = true;
+    state.isTurnActive = false;
+    if (state.timerInterval) {
+      clearInterval(state.timerInterval);
+      state.timerInterval = null;
+    }
+    if (ui.overlayTurn) ui.overlayTurn.classList.add('hidden');
+
+    if (window.wordGames) {
+      if (window.wordGames.timerInterval) clearInterval(window.wordGames.timerInterval);
+      if (window.wordGames.revealInterval) clearInterval(window.wordGames.revealInterval);
+      if (window.wordGames.dom.revealModal) window.wordGames.dom.revealModal.classList.add('hidden');
+      window.wordGames.active = false;
+    }
+
+    if (isInitiator) {
+      window.netManager.send({
+        type: 'BACK_TO_LOBBY'
+      });
+    }
+
+    populateCategorySelect();
+    updateGameConfigVisibility();
+
+    if (window.netManager.isHost) {
+      ui.hostControls.classList.remove('hidden');
+      ui.guestWaitingMsg.classList.add('hidden');
+      ui.btnStartGame.disabled = false;
+      ui.btnStartGame.classList.add('ready-glow');
+    } else {
+      ui.hostControls.classList.add('hidden');
+      ui.guestWaitingMsg.classList.remove('hidden');
+    }
+
+    showView('waiting');
+  }
+
+  window.returnToLobby = returnToLobby;
+
+  window.switchGameModeDirectly = function(targetMode) {
+    if (window.netManager.isHost) {
+      ui.selectGameType.value = (targetMode === 'SPEED_NUMBERS') ? 'SPEED_NUMBERS' : targetMode;
+      updateGameConfigVisibility();
+
+      if (targetMode === 'SPEED_NUMBERS') {
+        state.maxNumbers = parseInt(ui.selectMaxNumbers.value, 10) || 50;
+        const firstAttackerHost = Math.random() >= 0.5;
+        window.netManager.send({
+          type: 'GAME_START',
+          maxNumbers: state.maxNumbers,
+          firstAttackerHost: firstAttackerHost
+        });
+        initGame(firstAttackerHost);
+      } else {
+        const rounds = parseInt(ui.selectWordRounds.value, 10) || 7;
+        const selectedCategory = parseInt(ui.selectCategory.value, 10) || -1;
+        window.netManager.send({
+          type: 'START_WORD_GAME',
+          mode: targetMode,
+          totalRounds: rounds,
+          selectedCategory: selectedCategory
+        });
+        if (window.wordGames) {
+          window.wordGames.explicitCategoryIdx = selectedCategory;
+          window.wordGames.startGame(targetMode, rounds);
+        }
+      }
+    } else {
+      let modeName = targetMode;
+      if (targetMode === 'SPEED_NUMBERS') modeName = '⚡ Caza Números';
+      if (targetMode === 'MIND_DIFF') modeName = '🧠 Mentes Opuestas';
+      if (targetMode === 'MIND_SAME') modeName = '🔮 Telepatía Total';
+
+      const s1 = document.getElementById('rematch-status');
+      const s2 = document.getElementById('wg-rematch-status');
+      if (s1) s1.textContent = `Pidiendo al anfitrión cambiar a ${modeName}...`;
+      if (s2) s2.textContent = `Pidiendo al anfitrión cambiar a ${modeName}...`;
+
+      window.netManager.send({
+        type: 'CHANGE_GAME_REQ',
+        requestedMode: targetMode,
+        modeName: modeName
+      });
+    }
+  };
+
+  window.switchGameWordAltMode = function() {
+    const curMode = (window.wordGames && window.wordGames.mode) ? window.wordGames.mode : 'MIND_DIFF';
+    const nextMode = (curMode === 'MIND_DIFF') ? 'MIND_SAME' : 'MIND_DIFF';
+    window.switchGameModeDirectly(nextMode);
+  };
+
   // Barajar array (Fisher-Yates)
   function shuffleArray(arr) {
     const copy = [...arr];
@@ -576,10 +698,8 @@
     // Configuración de Meta (Host)
     // Cambio de Tipo de Juego (Host)
     ui.selectGameType.addEventListener('change', () => {
-      const isSpeed = (val === 'SPEED_NUMBERS');
-      ui.cfgSpeedNumbers.classList.toggle('hidden', !isSpeed);
-      ui.cfgWordGames.classList.toggle('hidden', isSpeed);
-      ui.cfgCategorySelect.classList.toggle('hidden', isSpeed);
+      const val = ui.selectGameType.value;
+      updateGameConfigVisibility();
 
       let gameTitle = '⚡ Caza Números';
       if (val === 'MIND_DIFF') gameTitle = '🧠 No Elijas lo Mismo';
@@ -752,6 +872,34 @@
       location.reload();
     });
 
+    window.netManager.on('back_to_lobby', () => {
+      returnToLobby(false);
+    });
+
+    window.netManager.on('change_game_req', (data) => {
+      if (window.netManager.isHost) {
+        const accept = confirm(`¡Tu rival solicita cambiar de juego a ${data.modeName}! ¿Deseas cambiar ahora?`);
+        if (accept) {
+          window.switchGameModeDirectly(data.requestedMode);
+        }
+      }
+    });
+
+    // Botones para volver a la sala
+    const btnBackLobby = document.getElementById('btn-back-lobby');
+    if (btnBackLobby) {
+      btnBackLobby.addEventListener('click', () => {
+        returnToLobby(true);
+      });
+    }
+
+    const btnWgBackLobby = document.getElementById('btn-wg-back-lobby');
+    if (btnWgBackLobby) {
+      btnWgBackLobby.addEventListener('click', () => {
+        returnToLobby(true);
+      });
+    }
+
     window.netManager.on('error', (err) => {
       ui.lobbyStatus.textContent = err;
       ui.lobbyStatus.style.color = '#f87171';
@@ -765,6 +913,10 @@
       ui.lobbyStatus.textContent = `Sala "${roomParam.toUpperCase()}" detectada en el enlace. Escribe tu nombre y dale a "Unirse a Sala".`;
       ui.lobbyStatus.style.color = '#38bdf8';
     }
+
+    // Inicializar selectores dinámicos
+    populateCategorySelect();
+    updateGameConfigVisibility();
   }
 
   // Iniciar al cargar el DOM

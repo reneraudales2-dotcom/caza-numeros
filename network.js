@@ -219,6 +219,12 @@ class NetworkManager {
       case 'WORD_REMATCH_START':
         this.emit('word_rematch_start', data);
         break;
+      case 'BACK_TO_LOBBY':
+        this.emit('back_to_lobby', data);
+        break;
+      case 'CHANGE_GAME_REQ':
+        this.emit('change_game_req', data);
+        break;
       default:
         this.emit('custom_message', data);
     }

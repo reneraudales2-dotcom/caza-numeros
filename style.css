@@ -618,16 +618,24 @@ input[type="text"]:focus, select:focus {
    =================================================== */
 
 .word-options-grid {
-  display: flex;
-  flex-direction: column;
+  display: grid;
+  grid-template-columns: 1fr;
   gap: 10px;
+}
+
+@media (min-width: 540px) {
+  .word-options-grid {
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+  }
 }
 
 .word-option-card {
   width: 100%;
   display: flex;
   align-items: center;
-  padding: 14px 18px;
+  padding: 13px 16px;
+  min-height: 50px;
   background: rgba(30, 41, 59, 0.85);
   border: 2px solid rgba(255, 255, 255, 0.12);
   border-radius: 14px;
@@ -637,6 +645,7 @@ input[type="text"]:focus, select:focus {
   position: relative;
   text-align: left;
   outline: none;
+  touch-action: manipulation;
 }
 
 .word-option-card:hover:not(.disabled):not(.selected) {
@@ -720,4 +729,97 @@ input[type="text"]:focus, select:focus {
   text-align: center;
   word-break: break-word;
 }
+
+/* ===================================================
+   Selector Rápido de Modos en Game Over
+   =================================================== */
+
+.mode-switch-box {
+  margin-top: 14px;
+  margin-bottom: 14px;
+  padding: 16px;
+  background: rgba(15, 23, 42, 0.75);
+  border-radius: 18px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  backdrop-filter: blur(12px);
+  text-align: center;
+}
+
+.mode-switch-title {
+  font-size: 0.82rem;
+  font-weight: 800;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+  margin-bottom: 12px;
+}
+
+.quick-modes-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+.btn-mode-quick {
+  padding: 12px 10px;
+  font-size: 0.9rem;
+  font-weight: 700;
+  border-radius: 12px;
+  border: 1.5px solid transparent;
+  cursor: pointer;
+  transition: transform 0.1s ease, box-shadow 0.2s ease;
+  touch-action: manipulation;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  min-height: 48px;
+}
+
+.btn-mode-quick:active {
+  transform: scale(0.96);
+}
+
+.btn-mode-speed {
+  background: linear-gradient(135deg, rgba(6, 182, 212, 0.25), rgba(37, 99, 235, 0.4));
+  border-color: var(--primary);
+  color: #38bdf8;
+  box-shadow: 0 4px 15px rgba(6, 182, 212, 0.2);
+}
+
+.btn-mode-diff {
+  background: linear-gradient(135deg, rgba(236, 72, 153, 0.25), rgba(244, 63, 94, 0.4));
+  border-color: var(--accent-pink);
+  color: #f472b6;
+  box-shadow: 0 4px 15px rgba(236, 72, 153, 0.2);
+}
+
+.btn-mode-same {
+  background: linear-gradient(135deg, rgba(139, 92, 246, 0.25), rgba(168, 85, 247, 0.4));
+  border-color: #a855f7;
+  color: #c084fc;
+  box-shadow: 0 4px 15px rgba(168, 85, 247, 0.2);
+}
+
+.btn-mode-alt {
+  background: linear-gradient(135deg, rgba(245, 158, 11, 0.25), rgba(217, 119, 6, 0.4));
+  border-color: var(--secondary);
+  color: #fbbf24;
+  box-shadow: 0 4px 15px rgba(245, 158, 11, 0.2);
+}
+
+@media (max-width: 480px) {
+  .word-option-card {
+    padding: 12px 14px;
+    min-height: 48px;
+  }
+  .word-card-text {
+    font-size: 1rem;
+  }
+  .quick-modes-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
 

@@ -263,7 +263,23 @@
         </button>
         <div id="rematch-status" class="status-msg"></div>
 
-        <button id="btn-leave-game" class="btn btn-outline" style="margin-top: 10px;">
+        <!-- Selector Rápido de Modos Sin Salir de la Sala -->
+        <div class="mode-switch-box">
+          <div class="mode-switch-title">🎮 ¿Jugar a otro modo sin salir de la sala?</div>
+          <div class="quick-modes-grid">
+            <button class="btn btn-mode-quick btn-mode-diff" onclick="window.switchGameModeDirectly('MIND_DIFF')">
+              🧠 Mentes Opuestas
+            </button>
+            <button class="btn btn-mode-quick btn-mode-same" onclick="window.switchGameModeDirectly('MIND_SAME')">
+              🔮 Telepatía Total
+            </button>
+          </div>
+          <button id="btn-back-lobby" class="btn btn-outline" style="font-size: 0.9rem; padding: 10px;">
+            ⚙️ Volver a la Sala (Cambiar Ajustes)
+          </button>
+        </div>
+
+        <button id="btn-leave-game" class="btn btn-outline" style="margin-top: 6px; color: #f87171; border-color: rgba(239, 68, 68, 0.3);">
           🚪 Salir al Menú Principal
         </button>
       </div>
@@ -370,11 +386,27 @@
         </div>
 
         <button id="btn-wg-rematch" class="btn btn-primary" style="margin-bottom: 12px;">
-          🔄 ¡Jugar Otra Partida!
+          🔄 ¡Jugar Revancha Inmediata!
         </button>
         <div id="wg-rematch-status" class="status-msg"></div>
 
-        <button id="btn-wg-menu" class="btn btn-outline" style="margin-top: 10px;">
+        <!-- Selector Rápido de Modos Sin Salir de la Sala -->
+        <div class="mode-switch-box">
+          <div class="mode-switch-title">🎮 ¿Jugar a otro modo sin salir de la sala?</div>
+          <div class="quick-modes-grid">
+            <button class="btn btn-mode-quick btn-mode-speed" onclick="window.switchGameModeDirectly('SPEED_NUMBERS')">
+              ⚡ Caza Números
+            </button>
+            <button id="btn-wg-alt-mode" class="btn btn-mode-quick btn-mode-alt" onclick="window.switchGameWordAltMode()">
+              🔮 Cambiar Modo de Palabras
+            </button>
+          </div>
+          <button id="btn-wg-back-lobby" class="btn btn-outline" style="font-size: 0.9rem; padding: 10px;">
+            ⚙️ Volver a la Sala (Cambiar Ajustes)
+          </button>
+        </div>
+
+        <button id="btn-wg-menu" class="btn btn-outline" style="margin-top: 6px; color: #f87171; border-color: rgba(239, 68, 68, 0.3);">
           🚪 Salir al Menú Principal
         </button>
       </div>

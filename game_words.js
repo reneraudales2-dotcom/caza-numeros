@@ -417,6 +417,17 @@ class WordGamesController {
       window.wordRematchVotes.clear();
     }
 
+    const altBtn = document.getElementById('btn-wg-alt-mode');
+    if (altBtn) {
+      if (this.mode === 'MIND_DIFF') {
+        altBtn.textContent = '🔮 Jugar Telepatía Total';
+        altBtn.className = 'btn btn-mode-quick btn-mode-same';
+      } else {
+        altBtn.textContent = '🧠 Jugar Mentes Opuestas';
+        altBtn.className = 'btn btn-mode-quick btn-mode-diff';
+      }
+    }
+
     this.renderGameOverStats();
   }
 
