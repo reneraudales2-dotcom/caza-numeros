@@ -297,7 +297,8 @@
       window.netManager.send({
         type: 'TARGET_FOUND',
         target: num,
-        finder: state.myNickname
+        finder: state.myNickname,
+        roundId: state.roundNumber
       });
 
       // Procesar fin de turno
@@ -392,10 +393,11 @@
   }
 
   // Iniciar un turno activo con un objetivo
-  function startTurn(target) {
+  function startTurn(target, roundId) {
     state.currentTarget = target;
     state.turnTaps = 0;
-    state.roundNumber++;
+    state.roundNumber = (typeof roundId === 'number') ? roundId : state.roundNumber + 1;
+    state.roundResolved = false;
 
     ui.overlayTurn.classList.add('hidden');
 
@@ -417,6 +419,8 @@
 
   // Cuando se encuentra el número objetivo (congelar y preparar cambio)
   function onTargetDiscovered(finderName, target) {
+    if (state.roundResolved || state.gameOver) return; // evita doble procesamiento
+    state.roundResolved = true;
     state.isTurnActive = false;
     state.foundTargets.add(target);
 
@@ -457,19 +461,60 @@
           state.role = (state.role === 'ATTACKER') ? 'SEARCHER' : 'ATTACKER';
           const guestRole = (state.role === 'ATTACKER') ? 'SEARCHER' : 'ATTACKER';
           const nextTarget = pickNextTarget();
+          const nextRoundId = state.roundNumber + 1;
 
           window.netManager.send({
             type: 'NEW_ROUND',
             target: nextTarget,
-            guestRole: guestRole
+            guestRole: guestRole,
+            roundId: nextRoundId
           });
 
           window.soundFX.playTurnSwitch();
-          startTurn(nextTarget);
+          startTurn(nextTarget, nextRoundId);
         }
       }
     }, 1000);
   }
+
+  // Aviso de desconexión no bloqueante (el alert() congelaba la pantalla y los timers)
+  function showDisconnectBanner() {
+    if (document.getElementById('disconnect-banner')) return;
+    const box = document.createElement('div');
+    box.id = 'disconnect-banner';
+    box.style.cssText = 'position:fixed;inset:0;z-index:9999;display:flex;align-items:center;justify-content:center;background:rgba(2,6,23,.85);padding:20px;';
+    const card = document.createElement('div');
+    card.style.cssText = 'background:#1e293b;border:1px solid #334155;border-radius:16px;padding:24px;max-width:340px;text-align:center;color:#f1f5f9;font-family:inherit;';
+    const msg = document.createElement('p');
+    msg.textContent = '😕 Se perdió la conexión con tu rival.';
+    msg.style.cssText = 'margin:0 0 16px;font-size:1.1rem;';
+    const btn = document.createElement('button');
+    btn.className = 'btn btn-primary';
+    btn.textContent = 'Volver al inicio';
+    btn.onclick = () => { window.netManager.disconnect(); location.reload(); };
+    card.append(msg, btn);
+    box.appendChild(card);
+    document.body.appendChild(box);
+  }
+
+  // Mantener la pantalla encendida: si el celular se bloquea, WebRTC se corta
+  let wakeLock = null;
+  async function keepScreenAwake() {
+    try {
+      if ('wakeLock' in navigator && !wakeLock && !document.hidden) {
+        wakeLock = await navigator.wakeLock.request('screen');
+        wakeLock.addEventListener('release', () => { wakeLock = null; });
+      }
+    } catch (e) { /* no soportado o denegado: no es crítico */ }
+  }
+  document.addEventListener('visibilitychange', () => {
+    if (!document.hidden) {
+      keepScreenAwake();
+      if (window.soundFX && window.soundFX.ctx && window.soundFX.ctx.state === 'suspended') {
+        window.soundFX.ctx.resume();
+      }
+    }
+  });
 
   // Banner final seguro (textContent, nunca innerHTML con datos del rival)
   function setBanner(title, subtitle, color) {
@@ -559,9 +604,10 @@
       window.netManager.send({
         type: 'NEW_ROUND',
         target: firstTarget,
-        guestRole: (state.role === 'ATTACKER') ? 'SEARCHER' : 'ATTACKER'
+        guestRole: (state.role === 'ATTACKER') ? 'SEARCHER' : 'ATTACKER',
+        roundId: 1
       });
-      startTurn(firstTarget);
+      startTurn(firstTarget, 1);
     }
   }
 
@@ -641,12 +687,13 @@
 
     // Crear Sala
     ui.btnCreateRoom.addEventListener('click', () => {
-      const nick = ui.nicknameInput.value.trim() || 'Jugador 1';
+      const nick = ui.nicknameInput.value.trim().slice(0, 20) || 'Jugador 1';
       state.myNickname = nick;
       ui.player1Name.textContent = nick + ' (Tú - Anfitrión)';
       ui.lobbyStatus.textContent = 'Conectando con la nube...';
 
       window.soundFX.init();
+      keepScreenAwake();
 
       window.netManager.createRoom(nick, (roomCode) => {
         ui.displayRoomCode.textContent = roomCode;
@@ -672,6 +719,7 @@
           }
         }
 
+        if (ui.qrContainer) ui.qrContainer.innerHTML = '';
         if (window.QRCode) {
           new window.QRCode('qr-container', {
             text: shareUrl,
@@ -695,7 +743,7 @@
 
     // Unirse a Sala
     ui.btnJoinRoom.addEventListener('click', () => {
-      const nick = ui.nicknameInput.value.trim() || 'Jugador 2';
+      const nick = ui.nicknameInput.value.trim().slice(0, 20) || 'Jugador 2';
       const code = ui.inputRoomCode.value.trim();
 
       if (!code) {
@@ -706,6 +754,7 @@
       state.myNickname = nick;
       ui.lobbyStatus.textContent = 'Conectando con la sala ' + code.toUpperCase() + '...';
       window.soundFX.init();
+      keepScreenAwake();
 
       window.netManager.joinRoom(code, nick, () => {
         ui.displayRoomCode.textContent = code.toUpperCase();
@@ -771,6 +820,7 @@
           selectedCategory: selectedCategory
         });
 
+        window.wordGames.explicitCategoryIdx = selectedCategory;
         window.wordGames.startGame(gameType, rounds);
       }
     });
@@ -818,7 +868,7 @@
     });
 
     window.netManager.on('rival_handshake', (data) => {
-      state.rivalNickname = data.nickname || 'Rival';
+      state.rivalNickname = String(data.nickname || 'Rival').trim().slice(0, 20) || 'Rival';
       if (window.netManager.isHost) {
         ui.player2Name.textContent = state.rivalNickname;
       } else {
@@ -853,23 +903,29 @@
     });
 
     window.netManager.on('rival_tachado', (data) => {
-      state.rivalTachados = data.count;
+      // El contador solo sube y nunca pasa de la meta (ignora datos corruptos / fuera de orden)
+      const c = Number(data.count);
+      if (!Number.isFinite(c) || state.gameOver) return;
+      state.rivalTachados = Math.min(state.maxNumbers, Math.max(state.rivalTachados, Math.floor(c)));
       updateHUD();
     });
 
     window.netManager.on('target_found', (data) => {
-      onTargetDiscovered(data.finder, data.target);
+      if (typeof data.roundId === 'number' && data.roundId !== state.roundNumber) return; // mensaje de otra ronda
+      onTargetDiscovered(String(data.finder || state.rivalNickname).slice(0, 20), data.target);
     });
 
     window.netManager.on('new_round', (data) => {
+      if (state.gameOver) return;
       if (data.guestRole) {
         state.role = data.guestRole;
       }
       window.soundFX.playTurnSwitch();
-      startTurn(data.target);
+      startTurn(data.target, data.roundId);
     });
 
     window.netManager.on('game_over', (data) => {
+      state.rivalTachados = state.maxNumbers;
       triggerGameOver(false);
     });
 
@@ -891,8 +947,15 @@
     });
 
     window.netManager.on('peer_disconnected', () => {
-      alert('Tu rival se ha desconectado de la partida.');
-      location.reload();
+      state.gameOver = true;
+      state.isTurnActive = false;
+      clearInterval(state.overlayTimer);
+      if (window.wordGames) {
+        clearInterval(window.wordGames.timerInterval);
+        clearInterval(window.wordGames.revealInterval);
+        window.wordGames.active = false;
+      }
+      showDisconnectBanner();
     });
 
     window.netManager.on('back_to_lobby', () => {
@@ -926,6 +989,11 @@
     window.netManager.on('error', (err) => {
       ui.lobbyStatus.textContent = err;
       ui.lobbyStatus.style.color = '#f87171';
+      // Si falló antes de conectar, volver al lobby (antes el error quedaba oculto en otra pantalla)
+      if (!window.netManager.connected && !state.gameOver) {
+        window.netManager.disconnect();
+        showView('lobby');
+      }
     });
 
     // Auto-completar código si viene por parámetro en URL (?room=XYZ)

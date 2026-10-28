@@ -7,14 +7,8 @@
   <link rel="stylesheet" href="style.css">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='0.9em' font-size='90'%3E⚡%3C/text%3E%3C/svg%3E">
   
-  <!-- PeerJS WebRTC Library para conexión directa P2P -->
-  <script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
-  <script>
-    // Fallback por si unpkg tiene retraso
-    if (typeof Peer === 'undefined') {
-      document.write('<script src="https://cdn.jsdelivr.net/npm/peerjs@1.5.4/dist/peerjs.min.js"><\/script>');
-    }
-  </script>
+  <!-- PeerJS (copia local: no depende de CDNs externos) -->
+  <script src="peerjs.min.js"></script>
 </head>
 <body>
 

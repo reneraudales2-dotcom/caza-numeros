@@ -86,6 +86,7 @@ class WordGamesController {
     this.totalRounds = totalRounds;
     this.currentRound = 0;
     this.usedCategoryIndices.clear();
+    this.deck = [];
     this.scoreHits = 0;
     this.scoreFails = 0;
     this.myChoice = null;
@@ -150,18 +151,26 @@ class WordGamesController {
       return;
     }
 
-    // Elegir categoría (respeta selección explícita)
+    // Elegir categoría (respeta selección explícita); mazo barajado = sin repetir hasta agotar todas
+    const totalCat = window.GAME_CATEGORIES.length;
     let catIdx;
-    if (this.explicitCategoryIdx >= 0) {
+    if (this.explicitCategoryIdx >= 0 && this.explicitCategoryIdx < totalCat) {
       catIdx = this.explicitCategoryIdx;
-      // Restablecer para rondas posteriores
       this.explicitCategoryIdx = -1;
+      this.deck = (this.deck || []).filter(i => i !== catIdx);
     } else {
-      const totalCat = window.GAME_CATEGORIES.length;
-      catIdx = Math.floor(Math.random() * totalCat);
-      while (this.usedCategoryIndices.has(catIdx) && this.usedCategoryIndices.size < totalCat) {
-        catIdx = Math.floor(Math.random() * totalCat);
+      if (!this.deck || this.deck.length === 0) {
+        this.deck = Array.from({ length: totalCat }, (_, i) => i).filter(i => !this.usedCategoryIndices.has(i));
+        if (this.deck.length === 0) {           // ya se usaron todas: empezar un mazo nuevo
+          this.usedCategoryIndices.clear();
+          this.deck = Array.from({ length: totalCat }, (_, i) => i);
+        }
+        for (let i = this.deck.length - 1; i > 0; i--) {
+          const j = Math.floor(Math.random() * (i + 1));
+          [this.deck[i], this.deck[j]] = [this.deck[j], this.deck[i]];
+        }
       }
+      catIdx = this.deck.pop();
     }
     this.usedCategoryIndices.add(catIdx);
 
@@ -271,7 +280,8 @@ class WordGamesController {
     // Enviar mi elección al rival
     window.netManager.send({
       type: 'WORD_VOTE',
-      choice: index
+      choice: index,
+      round: this.currentRound
     });
 
     // Si el rival ya había votado, ejecutar la revelación
@@ -280,7 +290,11 @@ class WordGamesController {
     }
   }
 
-  handleRivalVoted(choice) {
+  handleRivalVoted(choice, round) {
+    if (!this.active || !this.currentCategory || this.isRevealing) return;
+    if (typeof round === 'number' && round !== this.currentRound) return; // voto de otra ronda
+    if (!Number.isInteger(choice) || choice < 0 || choice >= this.currentCategory.options.length) return;
+    if (this.rivalChoice !== null) return; // un solo voto por ronda
     this.rivalChoice = choice;
     this.dom.statusNotice.textContent = '¡Tu rival ya eligió su palabra! 🔒';
 
@@ -496,7 +510,7 @@ window.addEventListener('DOMContentLoaded', () => {
     });
 
     window.netManager.on('word_vote', (data) => {
-      window.wordGames.handleRivalVoted(data.choice);
+      window.wordGames.handleRivalVoted(data.choice, data.round);
     });
 
     window.netManager.on('word_game_over', (data) => {
