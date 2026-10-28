@@ -41,11 +41,13 @@ class NetworkManager {
   // Inicializar como Anfitrión (Crear Sala)
   createRoom(nickname, onRoomReady) {
     this.isHost = true;
+    this._onRoomReady = onRoomReady;
+    this._createAttempts = (this._createAttempts || 0);
     this.roomCode = this.generateCode();
     const peerId = this.getPeerIdFromCode(this.roomCode);
 
     this.initPeer(peerId, () => {
-      if (onRoomReady) onRoomReady(this.roomCode);
+      if (this._onRoomReady) this._onRoomReady(this.roomCode);
     });
   }
 
@@ -106,6 +108,12 @@ class NetworkManager {
       this.peer.on('error', (err) => {
         console.error('Error de PeerJS:', err);
         let errorMsg = 'Error al conectar con la red.';
+        if (err.type === 'unavailable-id' && this.isHost && this._createAttempts < 5) {
+          // Código de sala ocupado: generar otro automáticamente
+          this._createAttempts++;
+          this.createRoom(null, this._onRoomReady);
+          return;
+        }
         if (err.type === 'unavailable-id') {
           errorMsg = 'El código de sala ya está en uso. Intenta de nuevo.';
         } else if (err.type === 'peer-unavailable') {

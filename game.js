@@ -139,10 +139,7 @@
   function returnToLobby(isInitiator = true) {
     state.gameOver = true;
     state.isTurnActive = false;
-    if (state.timerInterval) {
-      clearInterval(state.timerInterval);
-      state.timerInterval = null;
-    }
+    clearInterval(state.overlayTimer);
     if (ui.overlayTurn) ui.overlayTurn.classList.add('hidden');
 
     if (window.wordGames) {
@@ -192,7 +189,7 @@
         initGame(firstAttackerHost);
       } else {
         const rounds = parseInt(ui.selectWordRounds.value, 10) || 7;
-        const selectedCategory = parseInt(ui.selectCategory.value, 10) || -1;
+        const selectedCategory = parseCategoryValue();
         window.netManager.send({
           type: 'START_WORD_GAME',
           mode: targetMode,
@@ -229,6 +226,12 @@
     window.switchGameModeDirectly(nextMode);
   };
 
+  // Devuelve el índice de categoría elegido (-1 = aleatoria). Ojo: 0 es un índice válido.
+  function parseCategoryValue() {
+    const n = parseInt(ui.selectCategory.value, 10);
+    return Number.isNaN(n) ? -1 : n;
+  }
+
   // Barajar array (Fisher-Yates)
   function shuffleArray(arr) {
     const copy = [...arr];
@@ -261,6 +264,7 @@
       ui.boardGrid.style.gridTemplateColumns = 'repeat(auto-fill, minmax(38px, 1fr))';
     }
 
+    const frag = document.createDocumentFragment();
     state.myBoard.forEach(num => {
       const cell = document.createElement('button');
       cell.className = 'board-cell';
@@ -271,12 +275,9 @@
         cell.classList.add('already-found');
       }
 
-      cell.addEventListener('click', (e) => {
-        e.preventDefault();
-        handleBoardCellClick(num, cell);
-      });
-      ui.boardGrid.appendChild(cell);
+      frag.appendChild(cell);
     });
+    ui.boardGrid.appendChild(frag);
   }
 
   // Click en celda del tablero de búsqueda
@@ -329,16 +330,27 @@
 
     updateHUD();
 
-    // Notificar al rival del nuevo número tachado
-    window.netManager.send({
-      type: 'TACHADO_TICK',
-      count: state.myTachados
-    });
+    // Notificar al rival (agrupado: como mucho 1 mensaje cada ~50 ms con el último valor)
+    scheduleTickSend();
 
     // ¿Ganó el juego?
     if (state.myTachados >= state.maxNumbers) {
+      flushTickSend();
       triggerGameOver(true);
     }
+  }
+
+  let tickTimer = null;
+  function scheduleTickSend() {
+    if (tickTimer) return;
+    tickTimer = setTimeout(() => {
+      tickTimer = null;
+      window.netManager.send({ type: 'TACHADO_TICK', count: state.myTachados });
+    }, 50);
+  }
+  function flushTickSend() {
+    if (tickTimer) { clearTimeout(tickTimer); tickTimer = null; }
+    window.netManager.send({ type: 'TACHADO_TICK', count: state.myTachados });
   }
 
   // Actualizar indicadores visuales de progreso
@@ -422,7 +434,8 @@
     let count = 2;
     ui.overlayCountdown.textContent = count;
 
-    const timer = setInterval(() => {
+    clearInterval(state.overlayTimer);
+    const timer = state.overlayTimer = setInterval(() => {
       count--;
       if (count > 0) {
         ui.overlayCountdown.textContent = count;
@@ -458,6 +471,17 @@
     }, 1000);
   }
 
+  // Banner final seguro (textContent, nunca innerHTML con datos del rival)
+  function setBanner(title, subtitle, color) {
+    ui.winnerBanner.textContent = '';
+    ui.winnerBanner.append(title, document.createElement('br'));
+    const sub = document.createElement('span');
+    sub.style.fontSize = '1.05rem';
+    sub.style.color = color;
+    sub.textContent = subtitle;
+    ui.winnerBanner.appendChild(sub);
+  }
+
   // Fin de la Partida
   function triggerGameOver(didIWin) {
     if (state.gameOver) return;
@@ -468,14 +492,14 @@
     if (didIWin) {
       window.soundFX.playVictory();
       launchConfetti();
-      ui.winnerBanner.innerHTML = `🏆 ¡FELICITACIONES, GANASTE! 🏆<br><span style="font-size: 1.05rem; color: #a7f3d0;">Tachaste tus ${state.maxNumbers} números primero</span>`;
+      setBanner('🏆 ¡FELICITACIONES, GANASTE! 🏆', `Tachaste tus ${state.maxNumbers} números primero`, '#a7f3d0');
       window.netManager.send({
         type: 'GAME_OVER',
         winner: state.myNickname
       });
     } else {
       window.soundFX.playDefeat();
-      ui.winnerBanner.innerHTML = `🏁 ¡${state.rivalNickname} GANA LA PARTIDA! 🏁<br><span style="font-size: 1.05rem; color: #cbd5e1;">¡Estuvo reñido!</span>`;
+      setBanner(`🏁 ¡${state.rivalNickname} GANA LA PARTIDA! 🏁`, '¡Estuvo reñido!', '#cbd5e1');
     }
 
     // Mostrar estadísticas
@@ -501,6 +525,7 @@
 
   // Inicializar Partida
   function initGame(firstAttackerIsHost) {
+    clearInterval(state.overlayTimer);
     state.gameOver = false;
     state.myTachados = 0;
     state.rivalTachados = 0;
@@ -510,19 +535,9 @@
     state.historyRounds = [];
     state.rematchVotes.clear();
 
-    // Generar tablero de búsqueda propio usando Web Worker
-    if (typeof Worker !== 'undefined') {
-      const boardWorker = new Worker('boardWorker.js');
-      boardWorker.postMessage({ maxNumbers: state.maxNumbers });
-      boardWorker.onmessage = (e) => {
-        state.myBoard = e.data.board;
-        renderSearchBoard();
-      };
-    } else {
-      // Fallback si el navegador no soporta Web Workers
-      state.myBoard = generateMyBoard(state.maxNumbers);
-      renderSearchBoard();
-    }
+    // Generar tablero de búsqueda propio (instantáneo, no necesita Worker)
+    state.myBoard = generateMyBoard(state.maxNumbers);
+    renderSearchBoard();
 
     // Asignar rol inicial
     const amIHost = window.netManager.isHost;
@@ -602,10 +617,18 @@
 
   // Event Listeners y Red
   function setupEventListeners() {
+    // Clicks del tablero (delegación de eventos)
+    ui.boardGrid.addEventListener('click', (e) => {
+      const cell = e.target.closest('.board-cell');
+      if (!cell) return;
+      handleBoardCellClick(parseInt(cell.dataset.number, 10), cell);
+    });
+
     // Tecla Espacio para tachar
     window.addEventListener('keydown', (e) => {
       if (e.code === 'Space' && state.role === 'ATTACKER' && state.isTurnActive) {
         e.preventDefault();
+        if (e.repeat) return;
         handleTacharClick();
       }
     });
@@ -739,7 +762,7 @@
       } else {
         // Juegos de palabras: MIND_DIFF o MIND_SAME
         const rounds = parseInt(ui.selectWordRounds.value, 10) || 7;
-        const selectedCategory = parseInt(ui.selectCategory.value, 10) || -1;
+        const selectedCategory = parseCategoryValue();
 
         window.netManager.send({
           type: 'START_WORD_GAME',
